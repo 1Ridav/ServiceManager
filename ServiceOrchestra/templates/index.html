@@ -1,0 +1,109 @@
+<head>
+     <script language="javascript" type="text/javascript" src="/static/js/jquery-3.5.1.min.js"></script>
+</head>
+
+{% set title = "Main" %}
+<div id="main" hidden>
+     <a id="service_name"></a>
+     <input type="checkbox" id="checkbox_enable">
+     <a id="service_status"></a>
+
+     <div id="buttons_enabled" hidden>
+          <div id="state_stopped">
+               <button id="button_start">Запустить</button>
+          </div>
+          <div id="state_running" hidden>
+               <button id="button_stop">Остановить</button>
+               <button id="button_restart">Перезапустить</button>
+          </div>
+     </div>
+</div>
+
+<script type="text/javascript">
+     var state = {name:"loading", running:false, enabled:false}
+
+     function sendAjaxRequest(urlToSend, dataToSend = {}, request_type = "GET") {
+              $.ajax({type: request_type,
+                  url: urlToSend,
+                  data: dataToSend,
+                  dataType: 'json',
+                  contentType: 'application/json',
+                  success:function(result){
+                    if (result.success){
+                         state = result.result[0];
+                         state_refresh(state);
+                    }else{
+                         alert("Oops, something wrong happened")
+                    }
+                  },
+                 error:function(result)
+                  {
+                  alert('error');
+                 }
+             });
+     }
+     function state_refresh(state) {
+               $("#buttons_enabled" ).attr("hidden",  !state.controllable);
+               $("#state_stopped").attr("hidden", state.running);
+               $("#state_running").attr("hidden", !state.running);
+               $("#service_name").text(state.name);
+               $("#service_status").text(state.running ? "Сервис работает" : "Сервис остановлен");
+               $("#checkbox_enable").attr("checked", state.controllable);
+     }
+
+       $(document).ready(function(){
+          $("#button_start").click(function(e){
+              e.preventDefault();
+              sendAjaxRequest('/enable');
+          });
+
+          $("#button_stop").click(function(e){
+              e.preventDefault();
+              sendAjaxRequest('/disable');
+          });
+
+          $("#button_restart").click(function(e){
+              e.preventDefault();
+              sendAjaxRequest('/restart');
+          });
+
+          $("#checkbox_enable").click(function() {
+               if (state.controllable){
+                    sendAjaxRequest('/status', JSON.stringify({controllable:false}), "POST");
+               } else {
+                    sendAjaxRequest('/status', JSON.stringify({controllable:true}), "POST");
+               }
+          });
+          sendAjaxRequest('/status');
+          $("#main").show();
+        });
+
+
+
+</script>
+
+
+
+<!--
+{% set title = "Main" %}
+<a>{{name}}</a>
+
+{% if enabled %}
+    <input type="submit" value="Выключить сервис"
+    onclick="window.location='/disable';" />
+{% else %}
+<input type="submit" value="Включить сервис"
+    onclick="window.location='/enable';" />
+{% endif %}
+{% if enabled %}
+    {% if running %}
+        <input type="submit" value="Остановить"
+        onclick="window.location='/stop';" />
+        <input type="submit" value="Перезапустить"
+        onclick="window.location='/restart';" />
+    {% else %}
+        <input type="submit" value="Запустить"
+        onclick="window.location='/start';" />
+    {% endif %}
+{% endif %}
+-->
